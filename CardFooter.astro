@@ -1,0 +1,18 @@
+---
+interface Props {
+  class?: string;
+}
+
+const { class: customClass = "" } = Astro.props;
+---
+
+<div class={`card-footer ${customClass}`}>
+  <slot />
+</div>
+
+<style>
+  .card-footer {
+    padding: 1.5rem;
+    border-top: 1px solid hsl(var(--border));
+  }
+</style>

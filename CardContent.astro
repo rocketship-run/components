@@ -1,0 +1,17 @@
+---
+interface Props {
+  class?: string;
+}
+
+const { class: customClass = "" } = Astro.props;
+---
+
+<div class={`card-content ${customClass}`}>
+  <slot />
+</div>
+
+<style>
+  .card-content {
+    padding: 1.5rem;
+  }
+</style>

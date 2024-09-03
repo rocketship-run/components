@@ -1,0 +1,19 @@
+---
+interface Props {
+  class?: string;
+}
+
+const { class: customClass = "" } = Astro.props;
+---
+
+<p class={`card-description ${customClass}`}>
+  <slot />
+</p>
+
+<style>
+  .card-description {
+    margin: 0.5rem 0 0;
+    color: hsl(var(--muted-foreground));
+    font-size: 0.875rem;
+  }
+</style>

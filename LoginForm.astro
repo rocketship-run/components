@@ -1,0 +1,55 @@
+---
+import Card from './Card.astro';
+import CardHeader from './CardHeader.astro';
+import CardContent from './CardContent.astro';
+import CardFooter from './CardFooter.astro';
+import CardTitle from './CardTitle.astro';
+import CardDescription from './CardDescription.astro';
+import Button from './Button.astro';
+import Input from './Input.astro';
+import Label from './Label.astro';
+
+const description = "A simple login form with email and password. The submit button says 'Sign in'.";
+---
+
+<Card class="w-full max-w-sm">
+  <CardHeader>
+    <CardTitle>Login</CardTitle>
+    <CardDescription>
+      Enter your email below to login to your account.
+    </CardDescription>
+  </CardHeader>
+  <CardContent>
+    <form class="space-y-4">
+      <div class="space-y-2">
+        <Label for="email">Email</Label>
+        <Input id="email" type="email" placeholder="m@example.com" required />
+      </div>
+      <div class="space-y-2">
+        <Label for="password">Password</Label>
+        <Input id="password" type="password" required />
+      </div>
+    </form>
+  </CardContent>
+  <CardFooter>
+    <Button class="w-full">Sign in</Button>
+  </CardFooter>
+</Card>
+
+<style>
+  .w-full {
+    width: 100%;
+  }
+
+  .max-w-sm {
+    max-width: 24rem;
+  }
+
+  .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 1rem;
+  }
+
+  .space-y-2 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.5rem;
+  }
+</style>
