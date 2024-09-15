@@ -1,0 +1,141 @@
+---
+type JustifyValue = "start" | "end" | "center" | "between" | "around" | "evenly";
+type AlignValue = "start" | "end" | "center" | "baseline" | "stretch";
+type DirectionValue = "row" | "row-reverse" | "column" | "column-reverse";
+type Breakpoint = "sm" | "md" | "lg" | "xl";
+type SpacingValue = 0 | 1 | 2 | 3 | 4 | 5;
+
+interface Props {
+  justify?: Partial<Record<Breakpoint, JustifyValue>> | JustifyValue;
+  align?: Partial<Record<Breakpoint, AlignValue>> | AlignValue;
+  direction?: Partial<Record<Breakpoint, DirectionValue>> | DirectionValue;
+  gap?: Partial<Record<Breakpoint, SpacingValue>> | SpacingValue;
+  margin?: Partial<Record<Breakpoint, SpacingValue>> | SpacingValue;
+  padding?: Partial<Record<Breakpoint, SpacingValue>> | SpacingValue;
+  class?: string;
+}
+
+const {
+  justify = "start",
+  align = "stretch",
+  direction = "row",
+  gap,
+  margin,
+  padding,
+  class: className,
+} = Astro.props;
+
+const uniqueId = 'fx-' + Math.random().toString(36).slice(2, 6);
+const PREFIX = uniqueId + "-";
+const usedClasses = new Set<string>();
+
+const breakpoints: Record<Breakpoint, string> = {
+  sm: "640px",
+  md: "768px",
+  lg: "1024px",
+  xl: "1280px"
+};
+
+function generateCSS(): string {
+  let css = "";
+  const mediaQueries: Record<Breakpoint, string[]> = Object.fromEntries(
+(Object.keys(breakpoints) as Breakpoint[]).map(bp => [bp, []])
+) as unknown as Record<Breakpoint, string[]>;
+
+  function addRule(rule: string, breakpoint?: Breakpoint): void {
+    if (breakpoint && breakpoints[breakpoint]) {
+      mediaQueries[breakpoint].push(rule);
+    } else {
+      css += rule + "\n";
+    }
+  }
+
+  usedClasses.forEach((fullClassName) => {
+    const className = fullClassName.slice(PREFIX.length);
+    let cssRule = "";
+
+    const [property, value, breakpoint] = className.split("-");
+
+    switch (property) {
+      case "flex":
+        cssRule = "display: flex;";
+        break;
+      case "justify":
+        const justifyValue = value === "between" || value === "around" || value === "evenly"
+          ? `space-${value}`
+          : value === "start" || value === "end"
+          ? `flex-${value}`
+          : value;
+        cssRule = `justify-content: ${justifyValue};`;
+        break;
+      case "align":
+        const alignValue = value === "start" || value === "end" ? `flex-${value}` : value;
+        cssRule = `align-items: ${alignValue};`;
+        break;
+      case "direction":
+        cssRule = `flex-direction: ${value};`;
+        break;
+      case "gap":
+      case "margin":
+      case "padding":
+        const numericValue = parseInt(value);
+        const cssValue = numericValue === 0 ? "0" : `${numericValue * 0.25}rem`;
+        cssRule = `${property}: ${cssValue};`;
+        break;
+    }
+
+    if (cssRule) {
+      addRule(`.${fullClassName} { ${cssRule} }`, breakpoint as Breakpoint);
+    }
+  });
+
+  Object.entries(mediaQueries).forEach(([breakpoint, rules]) => {
+    if (rules.length > 0) {
+      css += `@media (min-width: ${breakpoints[breakpoint as Breakpoint]}) {\n${rules.join("\n")}\n}\n`;
+    }
+  });
+
+  return css;
+}
+
+function getResponsiveClasses(
+  prop: Partial<Record<Breakpoint, string | number>> | string | number | undefined,
+  prefix: string
+): string {
+  if (typeof prop === "undefined") return "";
+  
+  if (typeof prop === "string" || typeof prop === "number") {
+    const cls = `${prefix}-${prop}`;
+    usedClasses.add(PREFIX + cls);
+    return PREFIX + cls;
+  }
+
+  return Object.entries(prop)
+    .map(([bp, value]) => {
+      const cls = bp === "base" ? `${prefix}-${value}` : `${prefix}-${value}-${bp}`;
+      usedClasses.add(PREFIX + cls);
+      return PREFIX + cls;
+    })
+    .join(" ");
+}
+
+usedClasses.add(PREFIX + "flex");
+const classes = [
+  PREFIX + "flex",
+  getResponsiveClasses(justify, "justify"),
+  getResponsiveClasses(align, "align"),
+  getResponsiveClasses(direction, "direction"),
+  getResponsiveClasses(gap, "gap"),
+  getResponsiveClasses(margin, "margin"),
+  getResponsiveClasses(padding, "padding"),
+  className
+].filter(Boolean).join(" ");
+
+const cssContent = generateCSS();
+---
+
+<style set:html={cssContent}></style>
+
+<div class={classes}>
+  <slot />
+</div>

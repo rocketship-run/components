@@ -1,0 +1,166 @@
+---
+export type ColorName = "gray" | "gold" | "bronze" | "brown" | "yellow" | "amber" | "orange" | "tomato" | "red" | "ruby" | "crimson" | "pink" | "plum" | "purple" | "violet" | "iris" | "indigo" | "blue" | "cyan" | "teal" | "jade" | "green" | "grass" | "lime" | "mint" | "sky";
+
+type ResponsiveValue<T> = T | Partial<Record<'sm' | 'md' | 'lg' | 'xl', T>>;
+type SpacingValue = number | string;
+
+type TextSize = '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9';
+type TextWeight = 'light' | 'regular' | 'medium' | 'bold';
+type TextAlign = 'left' | 'center' | 'right';
+type TextTrim = 'normal' | 'start' | 'end' | 'both';
+type TextWrap = 'wrap' | 'nowrap' | 'pretty' | 'balance';
+
+interface Props {
+  as?: 'span' | 'div' | 'label' | 'p';
+  size?: ResponsiveValue<TextSize>;
+  weight?: ResponsiveValue<TextWeight>;
+  align?: ResponsiveValue<TextAlign>;
+  trim?: ResponsiveValue<TextTrim>;
+  truncate?: boolean;
+  wrap?: ResponsiveValue<TextWrap>;
+  color?: ColorName;
+  highContrast?: boolean;
+  accentColor?: ColorName;
+  m?: ResponsiveValue<SpacingValue>;
+  mx?: ResponsiveValue<SpacingValue>;
+  my?: ResponsiveValue<SpacingValue>;
+  mt?: ResponsiveValue<SpacingValue>;
+  mr?: ResponsiveValue<SpacingValue>;
+  mb?: ResponsiveValue<SpacingValue>;
+  ml?: ResponsiveValue<SpacingValue>;
+}
+
+const { 
+  as = 'span',
+  size = '2',
+  weight = 'regular',
+  align,
+  trim,
+  truncate,
+  wrap,
+  color,
+  highContrast = false,
+  accentColor,
+  m,
+  mx,
+  my,
+  mt,
+  mr,
+  mb,
+  ml,
+  ...rest
+} = Astro.props;
+
+const sizeMap: Record<TextSize, { fontSize: string; lineHeight: string; letterSpacing: string }> = {
+  '1': { fontSize: '12px', lineHeight: '16px', letterSpacing: '0.0025em' },
+  '2': { fontSize: '14px', lineHeight: '20px', letterSpacing: '0' },
+  '3': { fontSize: '16px', lineHeight: '24px', letterSpacing: '0' },
+  '4': { fontSize: '18px', lineHeight: '26px', letterSpacing: '-0.0025em' },
+  '5': { fontSize: '20px', lineHeight: '28px', letterSpacing: '-0.005em' },
+  '6': { fontSize: '24px', lineHeight: '30px', letterSpacing: '-0.00625em' },
+  '7': { fontSize: '28px', lineHeight: '36px', letterSpacing: '-0.0075em' },
+  '8': { fontSize: '35px', lineHeight: '40px', letterSpacing: '-0.01em' },
+  '9': { fontSize: '60px', lineHeight: '60px', letterSpacing: '-0.025em' },
+};
+
+const weightMap: Record<TextWeight, number> = {
+  light: 300,
+  regular: 400,
+  medium: 500,
+  bold: 700,
+};
+
+const breakpoints: Record<'sm' | 'md' | 'lg' | 'xl', string> = {
+  sm: "640px",
+  md: "768px",
+  lg: "1024px",
+  xl: "1280px"
+};
+
+function generateResponsiveStyles(prop: ResponsiveValue<any> | undefined, cssProperty: string): string {
+  if (typeof prop === "undefined") return "";
+  
+  if (typeof prop !== "object") {
+    return `${cssProperty}: ${prop};`;
+  }
+
+  let styles = "";
+  Object.entries(prop).forEach(([bp, value]) => {
+    if (bp === "base") {
+      styles += `${cssProperty}: ${value};`;
+    } else if (bp in breakpoints) {
+      styles += `@media (min-width: ${breakpoints[bp as keyof typeof breakpoints]}) { ${cssProperty}: ${value}; }`;
+    }
+  });
+  return styles;
+}
+
+const uniqueId = 'text-' + Math.random().toString(36).slice(2, 6);
+const PREFIX = uniqueId + "-";
+
+function generateTextStyles(): string {
+  const { fontSize, lineHeight, letterSpacing } = sizeMap[size as TextSize];
+  
+  let textColor: string;
+  if (color) {
+    textColor = `var(--${color}-12)`;
+  } else if (['div', 'p', 'span'].includes(as)) {
+    textColor = 'var(--gray-12)';
+  } else {
+    textColor = `var(--${accentColor || 'gray'}-12)`;
+  }
+
+  const baseStyles = `
+    font-size: ${fontSize};
+    line-height: ${lineHeight};
+    letter-spacing: ${letterSpacing};
+    font-weight: ${weightMap[weight as TextWeight]};
+    color: ${textColor};
+    ${truncate ? 'text-overflow: ellipsis; overflow: hidden; white-space: nowrap;' : ''}
+    ${wrap ? `white-space: ${wrap};` : ''}
+    ${highContrast ? `color: var(--${color || (accentColor && !['div', 'p', 'span'].includes(as) ? 'rs-theme-accent' : 'gray')}-12);` : ''}
+  `;
+
+  const trimStyles = trim ? `
+    ${trim === 'both' || trim === 'start' ? 'line-height: 1;' : ''}
+    ${trim === 'both' || trim === 'end' ? 'margin-bottom: -0.35em;' : ''}
+  ` : '';
+
+  const alignStyles = generateResponsiveStyles(align, 'text-align');
+  const marginStyles = `
+    ${generateResponsiveStyles(m, 'margin')}
+    ${generateResponsiveStyles(mx, 'margin-left')}
+    ${generateResponsiveStyles(mx, 'margin-right')}
+    ${generateResponsiveStyles(my, 'margin-top')}
+    ${generateResponsiveStyles(my, 'margin-bottom')}
+    ${generateResponsiveStyles(mt, 'margin-top')}
+    ${generateResponsiveStyles(mr, 'margin-right')}
+    ${generateResponsiveStyles(mb, 'margin-bottom')}
+    ${generateResponsiveStyles(ml, 'margin-left')}
+  `;
+
+  return `
+    .${PREFIX}text {
+      ${baseStyles}
+      ${trimStyles}
+      ${alignStyles}
+      ${marginStyles}
+    }
+  `;
+}
+
+const textStyles = generateTextStyles();
+
+const rawContent = await Astro.slots.render('default');
+const textContent = rawContent.replace(/<[^>]*>/g, '');
+
+---
+
+<style set:html={textStyles}></style>
+
+<Fragment>
+  {as === 'p' && <p class={`${PREFIX}text`} {...rest} set:html={textContent} />}
+  {as === 'div' && <div class={`${PREFIX}text`} {...rest} set:html={textContent} />}
+  {as === 'span' && <span class={`${PREFIX}text`} {...rest} set:html={textContent} />}
+  {as === 'label' && <label class={`${PREFIX}text`} {...rest} set:html={textContent} />}
+</Fragment>

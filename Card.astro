@@ -1,21 +1,218 @@
 ---
-interface Props {
+export type ColorValue = "gray" | "gold" | "bronze" | "brown" | "yellow" | "amber" | "orange" | "tomato" | "red" | "ruby" | "crimson" | "pink" | "plum" | "purple" | "violet" | "iris" | "indigo" | "blue" | "cyan" | "teal" | "jade" | "green" | "grass" | "lime" | "mint" | "sky";
+
+type ResponsiveValue<T> = T | Partial<Record<'sm' | 'md' | 'lg' | 'xl', T>>;
+type SpacingValue = number | string;
+type SizeValue = number | string;
+
+type CardSize = '1' | '2' | '3' | '4' | '5';
+type Variant = 'surface' | 'classic' | 'ghost';
+type WidthValue = 'auto' | 'full' | number | string;
+
+interface Props extends Partial<Record<'m' | 'mx' | 'my' | 'mt' | 'mr' | 'mb' | 'ml', ResponsiveValue<SpacingValue>>> {
+  variant?: Variant;
+  color?: ColorValue;
+  size?: ResponsiveValue<CardSize>;
+  asChild?: boolean;
+  width?: ResponsiveValue<WidthValue>;
+  height?: ResponsiveValue<SpacingValue>;
+  margin?: ResponsiveValue<SpacingValue>;
+  padding?: ResponsiveValue<SpacingValue>;
+  maxWidth?: ResponsiveValue<SizeValue>;
+  minWidth?: ResponsiveValue<SizeValue>;
+  maxHeight?: ResponsiveValue<SizeValue>;
+  minHeight?: ResponsiveValue<SizeValue>;
   class?: string;
 }
 
-const { class: customClass = "" } = Astro.props;
+const {
+  variant = 'classic',
+  color,
+  size = '1',
+  asChild = false,
+  width,
+  height,
+  margin,
+  padding,
+  maxWidth,
+  minWidth,
+  maxHeight,
+  minHeight,
+  class: className,
+  ...spacingProps
+} = Astro.props;
+
+const uniqueId = 'card-' + Math.random().toString(36).slice(2, 6);
+const PREFIX = uniqueId + "-";
+
+const breakpoints: Record<'sm' | 'md' | 'lg' | 'xl', string> = {
+  sm: "640px",
+  md: "768px",
+  lg: "1024px",
+  xl: "1280px"
+};
+
+const sizeMap: Record<CardSize, { padding: string }> = {
+  '1': { padding: '0.5rem' },
+  '2': { padding: '0.75rem' },
+  '3': { padding: '1rem' },
+  '4': { padding: '1.25rem' },
+  '5': { padding: '1.5rem' },
+};
+
+const darkTextColors = ['yellow', 'amber', 'lime', 'mint', 'sky'];
+
+function generateResponsiveStyles(prop: ResponsiveValue<any> | undefined, cssProperty: string): string {
+  if (typeof prop === "undefined") return "";
+  
+  if (typeof prop !== "object") {
+    return `${cssProperty}: ${prop};`;
+  }
+
+  let styles = "";
+  Object.entries(prop).forEach(([bp, value]) => {
+    if (bp === "base") {
+      styles += `${cssProperty}: ${value};`;
+    } else if (bp in breakpoints) {
+      styles += `@media (min-width: ${breakpoints[bp as keyof typeof breakpoints]}) { ${cssProperty}: ${value}; }`;
+    }
+  });
+  return styles;
+}
+
+function generateSpacingStyles(props: Partial<Record<'m' | 'mx' | 'my' | 'mt' | 'mr' | 'mb' | 'ml', ResponsiveValue<SpacingValue>>>): string {
+  const directions = {
+    m: 'margin', mx: 'margin-left,margin-right', my: 'margin-top,margin-bottom', 
+    mt: 'margin-top', mr: 'margin-right', mb: 'margin-bottom', ml: 'margin-left'
+  };
+  let styles = "";
+
+  Object.entries(props).forEach(([prop, value]) => {
+    if (prop in directions) {
+      const cssProps = directions[prop as keyof typeof directions].split(',');
+      cssProps.forEach(cssProp => {
+        styles += generateResponsiveStyles(value, cssProp);
+      });
+    }
+  });
+
+  return styles;
+}
+
+function generateColorStyles(color: ColorValue, variant: Variant): string {
+  const isLightColor = darkTextColors.includes(color);
+  return `
+    background-color: ${variant === 'surface' ? `var(--${color}-2)` :
+                        variant === 'classic' ? 'white' : 'transparent'};
+    color: ${`var(--${color}-11)`};
+    border-color: ${`var(--${color}-4)`};
+    ${variant === 'classic' ? `box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);` : ''}
+  `;
+}
+
+function generateCardStyles(): string {
+  const baseStyles = `
+    display: block;
+    border-radius: var(--rs-radius-3);
+    transition: all 0.2s ease-in-out;
+    border: 1px solid;
+  `;
+
+  const sizeStyles = typeof size === 'object'
+    ? Object.entries(size).map(([bp, value]) => {
+        const padding = sizeMap[value as CardSize].padding;
+        return bp === 'base'
+          ? `.${PREFIX}card__header, .${PREFIX}card__content, .${PREFIX}card__footer { padding: ${padding}; }`
+          : `@media (min-width: ${breakpoints[bp as keyof typeof breakpoints]}) { .${PREFIX}card__header, .${PREFIX}card__content, .${PREFIX}card__footer { padding: ${padding}; } }`;
+      }).join('\n')
+    : `.${PREFIX}card__header, .${PREFIX}card__content, .${PREFIX}card__footer { padding: ${sizeMap[size as CardSize].padding}; }`;
+
+  const variantStyles = color ? generateColorStyles(color, variant) : `
+    background-color: ${variant === 'surface' ? 'var(--rs-theme-accent-2)' :
+                        variant === 'classic' ? 'white' : 'transparent'};
+    color: var(--rs-theme-accent-11);
+    border-color: var(--rs-theme-accent-4);
+    ${variant === 'classic' ? `box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);` : ''}
+  `;
+
+  const widthStyles = generateResponsiveStyles(width, 'width');
+  const heightStyles = generateResponsiveStyles(height, 'height');
+  const marginStyles = generateResponsiveStyles(margin, 'margin');
+  const paddingStyles = generateResponsiveStyles(padding, 'padding');
+  const maxWidthStyles = generateResponsiveStyles(maxWidth, 'max-width');
+  const minWidthStyles = generateResponsiveStyles(minWidth, 'min-width');
+  const maxHeightStyles = generateResponsiveStyles(maxHeight, 'max-height');
+  const minHeightStyles = generateResponsiveStyles(minHeight, 'min-height');
+  const spacingStyles = generateSpacingStyles(spacingProps);
+
+  return `
+    .${PREFIX}card {
+      ${baseStyles}
+      ${variantStyles}
+      ${widthStyles}
+      ${heightStyles}
+      ${marginStyles}
+      ${paddingStyles}
+      ${maxWidthStyles}
+      ${minWidthStyles}
+      ${maxHeightStyles}
+      ${minHeightStyles}
+      ${spacingStyles}
+    }
+    ${sizeStyles}
+    .${PREFIX}card--interactive {
+      cursor: pointer;
+    }
+    .${PREFIX}card--interactive:hover {
+      background-color: ${color ? `var(--${color}-3)` : 'var(--rs-theme-accent-3)'};
+    }
+    .${PREFIX}card__title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    .${PREFIX}card__description {
+      font-size: 0.875rem;
+      color: ${color ? `var(--${color}-11)` : 'var(--rs-theme-accent-11)'};
+      opacity: 0.8;
+    }
+  
+    .${PREFIX}card__footer {
+      border-top: 1px solid ${color ? `var(--${color}-4)` : 'var(--rs-theme-accent-4)'};
+    }
+  `;
+}
+
+const cardStyles = generateCardStyles();
+
+const Element = asChild ? 'span' : 'div';
 ---
 
-<div class={`card ${customClass}`}>
-  <slot />
-</div>
+<style set:html={cardStyles}></style>
 
-<style>
-  .card {
-    background-color: hsl(var(--card));
-    color: hsl(var(--card-foreground));
-    border: 1px solid hsl(var(--border));
-    border-radius: var(--radius);
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  }
-</style>
+<Element class={`${PREFIX}card ${asChild ? PREFIX + 'card--interactive' : ''} ${className || ''}`}>
+  {Astro.slots.has('description') && ( <div class={`${PREFIX}card__header`}>
+    {Astro.slots.has('title') && (
+      <h3 class={`${PREFIX}card__title`}>
+        <slot name="title" />
+      </h3>
+    )}
+    {Astro.slots.has('description') && (
+      <p class={`${PREFIX}card__description`}>
+        <slot name="description" />
+      </p>
+    )}
+ 
+  </div>
+  )}
+  
+  <div class={`${PREFIX}card__content`}>
+    <slot />
+  </div>
+  
+  {Astro.slots.has('footer') && (
+    <div class={`${PREFIX}card__footer`}>
+      <slot name="footer" />
+    </div>
+  )}
+</Element>

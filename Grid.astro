@@ -1,0 +1,173 @@
+---
+//@ts-nocheck
+type JustifyValue = "start" | "end" | "center" | "between";
+type AlignValue = "start" | "end" | "center" | "baseline" | "stretch";
+type DirectionValue = "row" | "row-dense" | "column" | "column-dense";
+type Breakpoint = "initial" | "sm" | "md" | "lg" | "xl" | "2xl";
+type SpacingValue = 0 | 1 | 2 | 3 | 4 | 5;
+type Display = "none" | "inline-grid" | "grid";
+type GridValue = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | string;
+type GapValue = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | string;
+
+interface Props {
+  as?: "div" | "span";
+  asChild?: boolean;
+  display?: Partial<Record<Breakpoint, Display>> | Display;
+  areas?: Partial<Record<Breakpoint, string>> | string;
+  columns?: Partial<Record<Breakpoint, GridValue>> | GridValue;
+  rows?: Partial<Record<Breakpoint, GridValue>> | GridValue;
+  flow?: Partial<Record<Breakpoint, DirectionValue>> | DirectionValue;
+  align?: Partial<Record<Breakpoint, AlignValue>> | AlignValue;
+  justify?: Partial<Record<Breakpoint, JustifyValue>> | JustifyValue;
+  gap?: Partial<Record<Breakpoint, GapValue>> | GapValue;
+  gapX?: Partial<Record<Breakpoint, GapValue>> | GapValue;
+  gapY?: Partial<Record<Breakpoint, GapValue>> | GapValue;
+  margin?: Partial<Record<Breakpoint, SpacingValue>> | SpacingValue;
+  padding?: Partial<Record<Breakpoint, SpacingValue>> | SpacingValue;
+  class?: string;
+}
+
+const {
+  as: Component = "div",
+  asChild = false,
+  display = "grid",
+  areas,
+  columns,
+  rows,
+  flow,
+  align,
+  justify,
+  gap,
+  gapX,
+  gapY,
+  margin,
+  padding,
+  class: className,
+} = Astro.props;
+
+const uniqueId = 'gx-' + Math.random().toString(36).slice(2, 6);
+const PREFIX = uniqueId + "-";
+const usedClasses = new Set<string>();
+
+const breakpoints: Record<Breakpoint, string> = {
+  initial: "0px",
+  sm: "640px",
+  md: "768px",
+  lg: "1024px",
+  xl: "1280px",
+  "2xl": "1536px"
+};
+
+function generateCSS(): string {
+  let css = "";
+  const mediaQueries: Record<Breakpoint, string[]> = Object.fromEntries(
+    Object.keys(breakpoints).map(bp => [bp, []])
+  ) as Record<Breakpoint, string[]>;
+
+  function addRule(rule: string, breakpoint?: Breakpoint): void {
+    if (breakpoint && breakpoints[breakpoint]) {
+      mediaQueries[breakpoint].push(rule);
+    } else {
+      css += rule + "\n";
+    }
+  }
+
+  function processResponsiveValue<T>(
+    prop: Partial<Record<Breakpoint, T>> | T | undefined,
+    cssProperty: string,
+    processor: (value: T) => string
+  ): void {
+    if (prop === undefined) return;
+
+    if (typeof prop === "object" && !Array.isArray(prop)) {
+      Object.entries(prop).forEach(([bp, value]) => {
+        addRule(`.${PREFIX}${cssProperty}-${value}-${bp} { ${cssProperty}: ${processor(value)}; }`, bp as Breakpoint);
+      });
+    } else {
+      addRule(`.${PREFIX}${cssProperty}-${prop} { ${cssProperty}: ${processor(prop as T)}; }`);
+    }
+  }
+
+  processResponsiveValue(display, "display", value => value);
+  processResponsiveValue(areas, "grid-template-areas", value => `"${value}"`);
+  processResponsiveValue(columns, "grid-template-columns", value => typeof value === "number" ? `repeat(${value}, 1fr)` : value);
+  processResponsiveValue(rows, "grid-template-rows", value => typeof value === "number" ? `repeat(${value}, 1fr)` : value);
+  processResponsiveValue(flow, "grid-auto-flow", value => value);
+  processResponsiveValue(align, "align-items", value => value);
+  processResponsiveValue(justify, "justify-content", value => value === "between" ? "space-between" : value);
+
+  function processGap(value: GapValue): string {
+    return typeof value === "number" ? `${value * 0.25}rem` : value;
+  }
+
+  processResponsiveValue(gap, "gap", processGap);
+  processResponsiveValue(gapX, "column-gap", processGap);
+  processResponsiveValue(gapY, "row-gap", processGap);
+
+  function processSpacing(value: SpacingValue): string {
+    return value === 0 ? "0" : `${value * 0.25}rem`;
+  }
+
+  processResponsiveValue(margin, "margin", processSpacing);
+  processResponsiveValue(padding, "padding", processSpacing);
+
+  Object.entries(mediaQueries).forEach(([breakpoint, rules]) => {
+    if (rules.length > 0) {
+      if (breakpoint === "initial") {
+        css += rules.join("\n") + "\n";
+      } else {
+        css += `@media (min-width: ${breakpoints[breakpoint as Breakpoint]}) {\n${rules.join("\n")}\n}\n`;
+      }
+    }
+  });
+
+  return css;
+}
+
+function getResponsiveClasses(
+  prop: Partial<Record<Breakpoint, any>> | any | undefined,
+  prefix: string
+): string {
+  if (prop === undefined) return "";
+
+  if (typeof prop === "object" && !Array.isArray(prop)) {
+    return Object.entries(prop)
+      .map(([bp, value]) => {
+        const cls = `${PREFIX}${prefix}-${value}-${bp}`;
+        usedClasses.add(cls);
+        return cls;
+      })
+      .join(" ");
+  } else {
+    const cls = `${PREFIX}${prefix}-${prop}`;
+    usedClasses.add(cls);
+    return cls;
+  }
+}
+
+const classes = [
+  getResponsiveClasses(display, "display"),
+  getResponsiveClasses(areas, "grid-template-areas"),
+  getResponsiveClasses(columns, "grid-template-columns"),
+  getResponsiveClasses(rows, "grid-template-rows"),
+  getResponsiveClasses(flow, "grid-auto-flow"),
+  getResponsiveClasses(align, "align-items"),
+  getResponsiveClasses(justify, "justify-content"),
+  getResponsiveClasses(gap, "gap"),
+  getResponsiveClasses(gapX, "column-gap"),
+  getResponsiveClasses(gapY, "row-gap"),
+  getResponsiveClasses(margin, "margin"),
+  getResponsiveClasses(padding, "padding"),
+  className
+].filter(Boolean).join(" ");
+
+const cssContent = generateCSS();
+
+const Element = asChild ? Astro.slots.render('default') : Component;
+---
+
+<style set:html={cssContent}></style>
+
+<div class={classes}>
+  <slot />
+</div>

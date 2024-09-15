@@ -1,0 +1,131 @@
+---
+import type { SpacingProps, TextScaleValue } from '../utils/spacing';
+import { generateSpacingStyles, generateTextScaleStyles, getTextScaleStyles } from '../utils/spacing';
+import type { ColorValue, Variant } from '../utils/color-utils';
+import { generateColorStyles } from '../utils/color-utils';
+
+export interface Props extends SpacingProps {
+  variant?: Variant;
+  color?: ColorValue;
+  size?: TextScaleValue;
+  radius?: 'none' | 'sm' | 'md' | 'lg' | 'full';
+  href?: string;
+  class?: string;
+
+}
+
+const {
+  variant = 'solid',
+  color,
+  size = '2',
+  radius,
+  href = '#',
+  class: className,
+  ...spacingProps
+} = Astro.props;
+
+const linkClasses = [
+  'rs-link',
+  `rs-link--${variant}`,
+  `rs-link--size-${size}`,
+  radius ? `rs-link--radius-${radius}` : 'rs-link--radius-theme',
+  color ? `rs-link--color-${color}` : 'rs-link--color-theme',
+  className,
+].filter(Boolean).join(' ');
+
+const spacingStyles = generateSpacingStyles(spacingProps);
+const textStyles = generateTextScaleStyles(size);
+const colorStyles = color ? generateColorStyles(color, variant) : '';
+---
+
+<a href={href} class={linkClasses} style={`${spacingStyles} ${textStyles} ${colorStyles}`}>
+  <span class="rs-link__inner">
+    <slot />
+  </span>
+</a>
+
+<style>
+  .rs-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+    font-weight: 500;
+    white-space: nowrap;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+  }
+
+  .rs-link__inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+  }
+
+  .rs-link--size-1 { font-size: var(--rs-text-xs); padding: 0 0.5rem; height: 1.5rem; }
+  .rs-link--size-2 { font-size: var(--rs-text-sm); padding: 0 0.75rem; height: 2rem; }
+  .rs-link--size-3 { font-size: var(--rs-text-base); padding: 0 1rem; height: 2.5rem; }
+  .rs-link--size-4 { font-size: var(--rs-text-lg); padding: 0 1.25rem; height: 3rem; }
+  .rs-link--size-5 { font-size: var(--rs-text-xl); padding: 0 1.5rem; height: 3.5rem; }
+
+  /* Solid variant */
+  .rs-link--solid.rs-link--color-theme {
+    background-color: var(--rs-theme-accent-9);
+    color: var(--rs-theme-accent-contrast);
+  }
+
+  .rs-link--solid.rs-link--color-theme:hover {
+    background-color: var(--rs-theme-accent-10);
+  }
+
+  /* Soft variant */
+  .rs-link--soft.rs-link--color-theme {
+    background-color: var(--rs-theme-accent-3);
+    color: var(--rs-theme-accent-11);
+  }
+
+  .rs-link--soft.rs-link--color-theme:hover {
+    background-color: var(--rs-theme-accent-4);
+  }
+
+  /* Outline variant */
+  .rs-link--outline.rs-link--color-theme {
+    background-color: transparent;
+    color: var(--rs-theme-accent-11);
+    box-shadow: inset 0 0 0 1px var(--rs-theme-accent-7);
+  }
+
+  .rs-link--outline.rs-link--color-theme:hover {
+    background-color: var(--rs-theme-accent-3);
+  }
+
+  /* Ghost variant */
+  .rs-link--ghost.rs-link--color-theme {
+    background-color: transparent;
+    color: var(--rs-theme-accent-11);
+  }
+
+  .rs-link--ghost.rs-link--color-theme:hover {
+    background-color: var(--rs-theme-accent-3);
+  }
+
+  /* Surface variant */
+  .rs-link--surface.rs-link--color-theme {
+    background-color: var(--rs-theme-accent-2);
+    color: var(--rs-theme-accent-11);
+  }
+
+  .rs-link--surface.rs-link--color-theme:hover {
+    background-color: var(--rs-theme-accent-3);
+  }
+
+  .rs-link--radius-theme { border-radius: var(--rs-theme-radius); }
+  .rs-link--radius-none { border-radius: 0; }
+  .rs-link--radius-sm { border-radius: var(--rs-radius-1, 0.125rem); }
+  .rs-link--radius-md { border-radius: var(--rs-radius-2, 0.25rem); }
+  .rs-link--radius-lg { border-radius: var(--rs-radius-3, 0.5rem); }
+  .rs-link--radius-full { border-radius: 9999px; }
+</style>

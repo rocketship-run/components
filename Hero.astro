@@ -1,0 +1,156 @@
+---
+import type { SpacingProps, TextScaleValue } from '../utils/spacing';
+import { generateSpacingStyles, generateTextScaleStyles } from '../utils/spacing';
+import type { ColorValue, Variant } from '../utils/color-utils';
+import { generateColorStyles } from '../utils/color-utils';
+import Link from './Link.astro';
+import Badge from './Badge.astro';
+
+interface ButtonProps {
+  text: string;
+  link: string;
+  variant?: Variant;
+  color?: ColorValue;
+  size?: TextScaleValue;
+}
+
+export interface Props extends SpacingProps {
+  title: string;
+  tagline: string;
+  layout?: "left" | "right" | "center";
+  primaryButton?: ButtonProps;
+  secondaryButton?: ButtonProps;
+  image: {
+    src: string;
+    alt: string;
+    width: number;
+    height: number;
+  };
+  variant?: Variant;
+  color?: ColorValue;
+  size?: TextScaleValue;
+}
+
+const {
+  title,
+  tagline,
+  layout = "left",
+  primaryButton,
+  secondaryButton,
+  image,
+  variant = 'solid',
+  color,
+  size = '3',
+  ...spacingProps
+} = Astro.props;
+
+const heroClasses = [
+  'rs-hero',
+  `rs-hero--${variant}`,
+  `rs-hero--color-${color}`,
+  `rs-hero--size-${size}`,
+  `rs-hero--layout-${layout}`,
+].filter(Boolean).join(' ');
+
+const spacingStyles = generateSpacingStyles(spacingProps);
+const textStyles = generateTextScaleStyles(size);
+const colorStyles = generateColorStyles(color, variant);
+---
+
+<header class={heroClasses} style={`${spacingStyles} ${colorStyles}`}>
+  <div class="rs-hero__content">
+    <Badge size="2" variant="soft">{title}</Badge>
+    <h1 class="rs-hero__title">{title}</h1>
+    <p class="rs-hero__tagline">{tagline}</p>
+ 
+    <div class="rs-hero__actions">
+      {primaryButton && (
+        <Link href={primaryButton.link} variant="solid" class={`rs-button rs-button--${primaryButton.variant || 'solid'} rs-button--color-${primaryButton.color || color} rs-button--size-${primaryButton.size || size}`}>
+          {primaryButton.text}
+        </Link>
+      )}
+      {secondaryButton && (
+        <Link href={secondaryButton.link} variant="outline" class={`rs-button rs-button--${secondaryButton.variant || 'outline'} rs-button--color-${secondaryButton.color || color} rs-button--size-${secondaryButton.size || size}`}>
+          {secondaryButton.text}
+        </Link>
+      )}
+    </div>
+  </div>
+  <img
+    class="rs-hero__image"
+    alt={image.alt}
+    width={image.width}
+    height={image.height}
+    src={image.src}
+  />
+</header>
+
+<style>
+  .rs-hero {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    padding: 2rem;
+  }
+  .rs-hero__content {
+    flex: 1;
+  }
+  .rs-hero__title {
+    margin-bottom: 0.5rem;
+  }
+  .rs-hero__tagline {
+    margin-bottom: 1rem;
+  }
+  .rs-hero__actions {
+    display: flex;
+    gap: 1rem;
+  }
+  .rs-hero__image {
+    object-fit: cover;
+  }
+
+  /* Layout variants */
+  .rs-hero--layout-left {
+    flex-direction: row;
+  }
+  .rs-hero--layout-left .rs-hero__content {
+    text-align: left;
+  }
+  .rs-hero--layout-right {
+    flex-direction: row-reverse;
+  }
+  .rs-hero--layout-right .rs-hero__content {
+    text-align: right;
+  }
+  .rs-hero--layout-center {
+    flex-direction: column;
+    text-align: center;
+  }
+  .rs-hero--layout-center .rs-hero__content {
+    text-align: center;
+  }
+  .rs-hero--layout-center .rs-hero__actions {
+    justify-content: center;
+  }
+
+  /* Size variants */
+  .rs-hero--size-1 { font-size: var(--rs-text-xs); }
+  .rs-hero--size-2 { font-size: var(--rs-text-sm); }
+  .rs-hero--size-3 { font-size: var(--rs-text-base); }
+  .rs-hero--size-4 { font-size: var(--rs-text-lg); }
+  .rs-hero--size-5 { font-size: var(--rs-text-xl); }
+
+  /* Color variants */
+  .rs-hero--solid.rs-hero--color-theme {
+    background-color: var(--rs-theme-accent-9);
+    color: var(--rs-theme-accent-contrast);
+  }
+  .rs-hero--soft.rs-hero--color-theme {
+    background-color: var(--rs-theme-accent-3);
+    color: var(--rs-theme-accent-11);
+  }
+  .rs-hero--ghost.rs-hero--color-theme {
+    background-color: transparent;
+    color: var(--rs-theme-accent-11);
+  }
+</style>
