@@ -4,8 +4,8 @@
 
  Visit https://rocketship.run
  
- [!WARNING]
- This is an experiment. It is a work in progress. The components can change rapidly without notice. Please use with caution.
+> [!WARNING]
+> This is an experiment. It is a work in progress. The components can change rapidly without notice. Please use with caution.
     
 
 
