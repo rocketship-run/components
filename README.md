@@ -31,7 +31,7 @@ Please remember that rocketship is still experimental and the components may cha
 
 ### Step 1: Copy and paste the components to your project
 
-To use rocketship components, you can copy the components from this github repo or rocketship.run website. 
+To use rocketship components, you can copy the components from this github repo or the https://rocketship.run website. 
 
 
 ### Step 2: Import the Theme.astro file in your Layout.astro file
