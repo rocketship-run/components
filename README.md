@@ -1,6 +1,8 @@
 # Rocketship
 
  Rocketship is an experimental radix and shadcn inspired design system for Astro that provides a set of reusable components and styles to help you build faster and more consistent websites.
+
+ Visit https://rocketship.run
  
  [!WARNING]
  This is an experiment. It is a work in progress. The components can change rapidly without notice. Please use with caution.
