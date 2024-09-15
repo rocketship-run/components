@@ -1,7 +1,11 @@
 # Rocketship
 
+ Rocketship is an experimental radix and shadcn inspired design system for Astro that provides a set of reusable components and styles to help you build faster and more consistent websites.
+ 
+ [!WARNING]
+ This is an experiment. It is a work in progress. The components can change rapidly without notice. Please use with caution.
+    
 
-## What is Rocketship?
 
 Rocketship is a free and open source set of Astro components that can be used in an Astro project. The components have the `.astro` extension and are meant to be used in the components directory in an Astro project. There is zero dependency, meaning that you don't need to install and use any external package.
 
